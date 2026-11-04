@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mohr's Circle & 2D Stress Transformation Lab</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', ' system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            slate: {
+              850: '#151e2e',
+              950: '#090d16'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root {
+      --accent-x: #38bdf8;
+      --accent-y: #a855f7;
+      --accent-tau: #f59e0b;
+      --accent-p: #10b981;
+      --accent-danger: #f43f5e;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Custom Range Sliders */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      background: rgba(148, 163, 184, 0.25);
+      border-radius: 999px;
+      outline: none;
+      transition: background 0.2s ease;
+    }
+    input[type="range"]:hover {
+      background: rgba(148, 163, 184, 0.4);
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #ffffff;
+      cursor: grab;
+      box-shadow: 0 2px 8px rgba(56, 189, 248, 0.5);
+      transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    input[type="range"]::-webkit-slider-thumb:active {
+      cursor: grabbing;
+      transform: scale(1.22);
+    }
+    input[type="range"].slider-purple::-webkit-slider-thumb {
+      background: #a855f7;
+      box-shadow: 0 2px 8px rgba(168, 85, 247, 0.5);
+    }
+    input[type="range"].slider-amber::-webkit-slider-thumb {
+      background: #f59e0b;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.5);
+    }
+    input[type="range"].slider-emerald::-webkit-slider-thumb {
+      background: #10b981;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.5);
+    }
+
+    /* SVG Interactive Elements */
+    .draggable-handle {
+      cursor: grab;
+      transition: r 0.15s ease, filter 0.15s ease;
+    }
+    .draggable-handle:hover {
+      filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.9));
+    }
+    .draggable-handle:active {
+      cursor: grabbing;
+    }
+
+    .element-rotatable {
+      cursor: grab;
+    }
+    .element-rotatable:active {
+      cursor: grabbing;
+    }
+
+    /* Subtle Blueprint Grid Pattern */
+    .blueprint-bg {
+      background-image: 
+        radial-gradient(rgba(148, 163, 184, 0.12) 1px, transparent 1px),
+        linear-gradient(to right, rgba(148, 163, 184, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.04) 1px, transparent 1px);
+      background-size: 20px 20px, 100px 100px, 100px 100px;
+    }
+
+    /* Pulse ring on active point */
+    @keyframes pulseRing {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      70% { transform: scale(1.8); opacity: 0; }
+      100% { transform: scale(1.8); opacity: 0; }
+    }
+    .pulse-circle {
+      transform-origin: center;
+      transform-box: fill-box;
+      animation: pulseRing 2s infinite cubic-bezier(0.2, 0.8, 0.4, 1);
+    }
+
+    /* Hide number input spinners for clean look */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-sky-500/30 selection:text-sky-200">
+
+  <!-- Top Navigation & Header -->
+  <header class="sticky top-0 z-30 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500/20 via-indigo-500/20 to-emerald-500/20 border border-sky-500/40 flex items-center justify-center shadow-inner">
+          <svg class="w-6 h-6 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="8" stroke-dasharray="3 2" />
+            <line x1="2" y1="12" x2="22" y2="12" strokeOpacity="0.5" />
+            <line x1="12" y1="2" x2="12" y2="22" strokeOpacity="0.5" />
+            <line x1="6.34" y1="17.66" x2="17.66" y2="6.34" class="text-emerald-400" stroke="currentColor" />
+            <circle cx="17.66" cy="6.34" r="2.2" fill="#38bdf8" stroke="none" />
+            <circle cx="6.34" cy="17.66" r="2.2" fill="#a855f7" stroke="none" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">Mohr's Circle Interactive Lab</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono font-medium bg-sky-500/15 text-sky-300 border border-sky-500/30">2D Plane Stress</span>
+          </div>
+          <p class="text-xs text-slate-400">Real-time stress transformation, principal planes & differential element visualizer</p>
+        </div>
+      </div>
+
+      <!-- Presets, Units & Axis Convention Controls -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+        <!-- Preset Loader -->
+        <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-1 text-xs">
+          <span class="px-2 text-slate-400 font-medium hidden md:inline">Preset:</span>
+          <select id="presetSelect" aria-label="Load Stress Preset" class="bg-slate-800 text-slate-200 rounded-md px-2.5 py-1.5 font-medium border border-slate-700 focus:outline-none focus:border-sky-500 cursor-pointer">
+            <option value="custom" disabled>Custom State</option>
+            <option value="biaxial" selected>General Biaxial + Shear</option>
+            <option value="uniaxial">Uniaxial Tension</option>
+            <option value="pureshear">Pure Shear</option>
+            <option value="hydrostatic">Hydrostatic (Isotropic)</option>
+            <option value="pressurevessel">Thin Pressure Vessel</option>
+            <option value="compression">Compressive Shear Column</option>
+          </select>
+        </div>
+
+        <!-- Axis Sign Convention Toggle -->
+        <button id="conventionToggleBtn" type="button" title="Toggle vertical shear axis orientation" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-medium text-slate-300 transition">
+          <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+          </svg>
+          <span id="conventionLabel">Axis: +τ Down (CCW 2θ)</span>
+        </button>
+
+        <!-- Units Selector -->
+        <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-1 text-xs font-mono">
+          <button type="button" data-unit="MPa" class="unit-btn px-2.5 py-1 rounded-md bg-sky-500/20 text-sky-300 border border-sky-500/40 font-semibold transition">MPa</button>
+          <button type="button" data-unit="ksi" class="unit-btn px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition">ksi</button>
+          <button type="button" data-unit="kPa" class="unit-btn px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition">kPa</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="max-w-[1600px] mx-auto px-4 sm:px-6 py-5">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+      <!-- LEFT COLUMN: Controls & Parameters (4 columns on desktop) -->
+      <section class="lg:col-span-4 flex flex-col gap-5">
+        
+        <!-- Input Stress State Card -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+              Initial Stress State (θ = 0°)
+            </h2>
+            <button id="resetDefaultBtn" type="button" class="text-xs text-slate-400 hover:text-sky-400 transition flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+              Reset
+            </button>
+          </div>
+
+          <div class="space-y-5">
+            <!-- Normal Stress X (sigma_x) -->
+            <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
+              <div class="flex items-center justify-between mb-2">
+                <label for="sigmaXNum" class="text-sm font-medium text-slate-200 flex items-center gap-2">
+                  <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-sky-500/15 border border-sky-500/40 font-mono text-xs font-bold text-sky-400">σ<sub>x</sub></span>
+                  <span>Normal Stress X</span>
+                </label>
+                <div class="flex items-center gap-1.5">
+                  <input id="sigmaXNum" type="number" step="1" min="-500" max="500" value="80" class="w-20 bg-slate-900 border border-slate-700 focus:border-sky-500 rounded-lg px-2.5 py-1 text-right font-mono text-sm text-sky-300 font-semibold focus:outline-none" />
+                  <span class="unit-label text-xs font-mono text-slate-400 w-8">MPa</span>
+                </div>
+              </div>
+              <input id="sigmaXRange" type="range" min="-200" max="200" step="1" value="80" />
+              <div class="flex justify-between text-[11px] font-mono text-slate-400 mt-1.5">
+                <span>-200 (Comp.)</span>
+                <span id="sigmaXTag" class="text-sky-400 font-medium">Tension (+x)</span>
+                <span>+200 (Tens.)</span>
+              </div>
+            </div>
+
+            <!-- Normal Stress Y (sigma_y) -->
+            <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
+              <div class="flex items-center justify-between mb-2">
+                <label for="sigmaYNum" class="text-sm font-medium text-slate-200 flex items-center gap-2">
+                  <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-purple-500/15 border border-purple-500/40 font-mono text-xs font-bold text-purple-400">σ<sub>y</sub></span>
+                  <span>Normal Stress Y</span>
+                </label>
+                <div class="flex items-center gap-1.5">
+                  <input id="sigmaYNum" type="number" step="1" min="-500" max="500" value="-40" class="w-20 bg-slate-900 border border-slate-700 focus:border-purple-500 rounded-lg px-2.5 py-1 text-right font-mono text-sm text-purple-300 font-semibold focus:outline-none" />
+                  <span class="unit-label text-xs font-mono text-slate-400 w-8">MPa</span>
+                </div>
+              </div>
+              <input id="sigmaYRange" type="range" min="-200" max="200" step="1" value="-40" class="slider-purple" />
+              <div class="flex justify-between text-[11px] font-mono text-slate-400 mt-1.5">
+                <span>-200 (Comp.)</span>
+                <span id="sigmaYTag" class="text-purple-400 font-medium">Compression (y)</span>
+                <span>+200 (Tens.)</span>
+              </div>
+            </div>
+
+            <!-- Shear Stress XY (tau_xy) -->
+            <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80">
+              <div class="flex items-center justify-between mb-2">
+                <label for="tauXYNum" class="text-sm font-medium text-slate-200 flex items-center gap-2">
+                  <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-amber-500/15 border border-amber-500/40 font-mono text-xs font-bold text-amber-400">τ<sub>xy</sub></span>
+                  <span>Shear Stress XY</span>
+                </label>
+                <div class="flex items-center gap-1.5">
+                  <input id="tauXYNum" type="number" step="1" min="-500" max="500" value="50" class="w-20 bg-slate-900 border border-slate-700 focus:border-amber-500 rounded-lg px-2.5 py-1 text-right font-mono text-sm text-amber-300 font-semibold focus:outline-none" />
+                  <span class="unit-label text-xs font-mono text-slate-400 w-8">MPa</span>
+                </div>
+              </div>
+              <input id="tauXYRange" type="range" min="-200" max="200" step="1" value="50" class="slider-amber" />
+              <div class="flex justify-between text-[11px] font-mono text-slate-400 mt-1.5">
+                <span>-200 (CW on +x)</span>
+                <span id="tauXYTag" class="text-amber-400 font-medium">CCW on +x face</span>
+                <span>+200 (CCW on +x)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transformation Angle (theta) Control Card -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              Transformation Angle (θ)
+            </h2>
+            <button id="animateBtn" type="button" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-medium transition">
+              <svg id="playIcon" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span id="animateBtnText">Sweep θ</span>
+            </button>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 mb-4">
+            <div class="flex items-center justify-between mb-2">
+              <label for="thetaNum" class="text-sm font-medium text-slate-200 flex items-center gap-2">
+                <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-emerald-500/15 border border-emerald-500/40 font-mono text-xs font-bold text-emerald-400">θ</span>
+                <span>Element Orientation</span>
+              </label>
+              <div class="flex items-center gap-1.5">
+                <input id="thetaNum" type="number" step="0.5" min="-180" max="180" value="25" class="w-20 bg-slate-900 border border-slate-700 focus:border-emerald-500 rounded-lg px-2.5 py-1 text-right font-mono text-sm text-emerald-300 font-semibold focus:outline-none" />
+                <span class="text-xs font-mono text-slate-400 w-8">deg (°)</span>
+              </div>
+            </div>
+            <input id="thetaRange" type="range" min="-90" max="90" step="0.5" value="25" class="slider-emerald" />
+            <div class="flex justify-between text-[11px] font-mono text-slate-400 mt-1.5">
+              <span>-90° (CW)</span>
+              <span id="twoThetaLabel" class="text-emerald-400 font-medium">Mohr Angle 2θ = +50.0°</span>
+              <span>+90° (CCW)</span>
+            </div>
+          </div>
+
+          <!-- Quick Jump Orientation Buttons -->
+          <div class="space-y-2">
+            <div class="text-xs text-slate-400 font-medium">Snap Element to Critical Planes:</div>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="snapZeroBtn" type="button" class="px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 text-xs font-medium text-slate-200 flex items-center justify-between transition group">
+                <span>Reference (0°)</span>
+                <span class="font-mono text-[11px] text-slate-400 group-hover:text-sky-400">θ = 0°</span>
+              </button>
+              <button id="snap45Btn" type="button" class="px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 text-xs font-medium text-slate-200 flex items-center justify-between transition group">
+                <span>Diagonal (45°)</span>
+                <span class="font-mono text-[11px] text-slate-400 group-hover:text-sky-400">θ = 45°</span>
+              </button>
+              <button id="snapPrincipalBtn" type="button" class="px-3 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-xs font-medium text-emerald-300 flex items-center justify-between transition">
+                <span>Principal (θ<sub>p1</sub>)</span>
+                <span id="btnThetaPVal" class="font-mono text-[11px] text-emerald-400">19.3°</span>
+              </button>
+              <button id="snapShearBtn" type="button" class="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-xs font-medium text-amber-300 flex items-center justify-between transition">
+                <span>Max Shear (θ<sub>s1</sub>)</span>
+                <span id="btnThetaSVal" class="font-mono text-[11px] text-amber-400">-25.7°</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Computed Summary Telemetry Card -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl">
+          <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+            Invariants & Principal Summary
+          </h2>
+
+          <div class="grid grid-cols-2 gap-2.5 font-mono">
+            <div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80">
+              <div class="text-[11px] font-sans text-slate-400">Major Principal (σ<sub>1</sub>)</div>
+              <div class="text-base font-bold text-emerald-400 mt-0.5"><span id="resSigma1">98.11</span> <span class="unit-label text-xs font-normal text-slate-500">MPa</span></div>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80">
+              <div class="text-[11px] font-sans text-slate-400">Minor Principal (σ<sub>2</sub>)</div>
+              <div class="text-base font-bold text-rose-400 mt-0.5"><span id="resSigma2">-58.11</span> <span class="unit-label text-xs font-normal text-slate-500">MPa</span></div>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80">
+              <div class="text-[11px] font-sans text-slate-400">Max In-Plane Shear (τ<sub>max</sub>)</div>
+              <div class="text-base font-bold text-amber-400 mt-0.5"><span id="resTauMax">78.10</span> <span class="unit-label text-xs font-normal text-slate-500">MPa</span></div>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80">
+              <div class="text-[11px] font-sans text-slate-400">Center / Avg Stress (σ<sub>avg</sub>)</div>
+              <div class="text-base font-bold text-slate-200 mt-0.5"><span id="resSigmaAvg">20.00</span> <span class="unit-label text-xs font-normal text-slate-500">MPa</span></div>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80">
+              <div class="text-[11px] font-sans text-slate-400">Principal Angles (θ<sub>p1</sub>, θ<sub>p2</sub>)</div>
+              <div class="text-sm font-semibold text-emerald-300 mt-0.5" id="resThetaP">19.9° / -70.1°</div>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80">
+              <div class="text-[11px] font-sans text-slate-400">Max Shear Angles (θ<sub>s1</sub>, θ<sub>s2</sub>)</div>
+              <div class="text-sm font-semibold text-amber-300 mt-0.5" id="resThetaS">-25.1° / 64.9°</div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- RIGHT COLUMN: Interactive Visualizations & Equations (8 columns on desktop) -->
+      <section class="lg:col-span-8 flex flex-col gap-5">
+
+        <!-- Live Transformed Stress Ribbon -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="bg-slate-900/90 border border-sky-500/30 rounded-2xl p-4 flex items-center justify-between shadow-lg">
+            <div>
+              <span class="text-xs font-medium text-slate-400 block">Transformed Normal X'</span>
+              <div class="text-xl sm:text-2xl font-mono font-bold text-sky-400 mt-0.5">
+                <span id="liveSigmaXp">96.88</span>
+                <span class="unit-label text-xs font-normal text-slate-400">MPa</span>
+              </div>
+              <span id="liveSigmaXpType" class="text-[11px] text-sky-300/80 font-mono">Tension on +x' face</span>
+            </div>
+            <div class="w-11 h-11 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center font-mono font-bold text-sky-400 text-base">
+              σ<sub>x'</sub>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/90 border border-purple-500/30 rounded-2xl p-4 flex items-center justify-between shadow-lg">
+            <div>
+              <span class="text-xs font-medium text-slate-400 block">Transformed Normal Y'</span>
+              <div class="text-xl sm:text-2xl font-mono font-bold text-purple-400 mt-0.5">
+                <span id="liveSigmaYp">-56.88</span>
+                <span class="unit-label text-xs font-normal text-slate-400">MPa</span>
+              </div>
+              <span id="liveSigmaYpType" class="text-[11px] text-purple-300/80 font-mono">Compression on +y' face</span>
+            </div>
+            <div class="w-11 h-11 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center font-mono font-bold text-purple-400 text-base">
+              σ<sub>y'</sub>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/90 border border-amber-500/30 rounded-2xl p-4 flex items-center justify-between shadow-lg">
+            <div>
+              <span class="text-xs font-medium text-slate-400 block">Transformed Shear X'Y'</span>
+              <div class="text-xl sm:text-2xl font-mono font-bold text-amber-400 mt-0.5">
+                <span id="liveTauXpYp">-13.82</span>
+                <span class="unit-label text-xs font-normal text-slate-400">MPa</span>
+              </div>
+              <span id="liveTauXpYpType" class="text-[11px] text-amber-300/80 font-mono">CW couple on +x' face</span>
+            </div>
+            <div class="w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center font-mono font-bold text-amber-400 text-base">
+              τ<sub>x'y'</sub>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dual Interactive Canvas Area: Mohr's Circle + 2D Differential Stress Element -->
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-5">
+          
+          <!-- MOHR'S CIRCLE INTERACTIVE SVG (7 cols) -->
+          <div class="xl:col-span-7 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div>
+                <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                  <span>Interactive Mohr's Circle</span>
+                  <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-sky-300 border border-slate-700">Drag Point X' to Rotate</span>
+                </h3>
+              </div>
+              <!-- Legend -->
+              <div class="flex items-center gap-3 text-[11px] font-mono">
+                <span class="flex items-center gap-1 text-sky-400"><span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span>X'(σ<sub>x'</sub>, τ<sub>x'y'</sub>)</span>
+                <span class="flex items-center gap-1 text-purple-400"><span class="w-2.5 h-2.5 rounded-full bg-purple-400 inline-block"></span>Y'(σ<sub>y'</sub>, -τ<sub>x'y'</sub>)</span>
+                <span class="flex items-center gap-1 text-emerald-400"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>σ<sub>1</sub>, σ<sub>2</sub></span>
+              </div>
+            </div>
+
+            <!-- SVG Container -->
+            <div class="relative w-full aspect-square max-h-[460px] mx-auto rounded-xl bg-slate-950 border border-slate-800/90 blueprint-bg overflow-hidden select-none">
+              <svg id="mohrSvg" viewBox="0 0 520 520" class="w-full h-full">
+                <defs>
+                  <!-- Radial Gradient for Circle Fill -->
+                  <radialGradient id="mohrCircleGrad" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.03" />
+                    <stop offset="75%" stop-color="#38bdf8" stop-opacity="0.08" />
+                    <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.18" />
+                  </radialGradient>
+                </defs>
+
+                <!-- Dynamic Grid Lines Group -->
+                <g id="mohrGridGroup"></g>
+
+                <!-- Principal Stress Axes (Coordinate Axes) -->
+                <g id="mohrAxesGroup"></g>
+
+                <!-- Shaded Mohr's Circle -->
+                <circle id="mohrMainCircle" cx="260" cy="260" r="140" fill="url(#mohrCircleGrad)" stroke="#38bdf8" stroke-width="2.2" stroke-opacity="0.85" />
+
+                <!-- Angle Arc for 2*theta_p and 2*theta -->
+                <path id="arcTwoThetaP" d="" fill="rgba(16, 185, 129, 0.08)" stroke="#10b981" stroke-width="1.5" stroke-dasharray="3 2" />
+                <path id="arcTwoTheta" d="" fill="rgba(56, 189, 248, 0.14)" stroke="#38bdf8" stroke-width="1.8" />
+                <text id="arcTwoThetaText" x="280" y="250" fill="#38bdf8" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600"></text>
+
+                <!-- Initial Reference Diameter X - Y (Dashed) -->
+                <line id="lineRefXY" x1="160" y1="200" x2="360" y2="320" stroke="#64748b" stroke-width="1.75" stroke-dasharray="5 4" />
+                <!-- Projection lines for X' -->
+                <line id="projLineX" x1="260" y1="260" x2="260" y2="260" stroke="#38bdf8" stroke-width="1" stroke-dasharray="2 3" opacity="0.65" />
+                <line id="projLineY" x1="260" y1="260" x2="260" y2="260" stroke="#38bdf8" stroke-width="1" stroke-dasharray="2 3" opacity="0.65" />
+
+                <!-- Transformed Diameter X' - Y' (Solid) -->
+                <line id="lineTransXY" x1="160" y1="200" x2="360" y2="320" stroke="#e2e8f0" stroke-width="2.2" />
+
+                <!-- Critical Points on Circle: Center C, Sigma1, Sigma2, TauMax1, TauMax2 -->
+                <g id="mohrCriticalPoints">
+                  <!-- Max Shear Line -->
+                  <line id="lineMaxShear" x1="260" y1="120" x2="260" y2="400" stroke="#f59e0b" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.5" />
+                  
+                  <!-- Center C -->
+                  <circle id="ptCenter" cx="260" cy="260" r="4.5" fill="#f8fafc" stroke="#0f172a" stroke-width="1.5" />
+                  <text id="lblCenter" x="260" y="278" fill="#cbd5e1" font-family="JetBrains Mono, monospace" font-size="10.5" text-anchor="middle">C</text>
+
+                  <!-- Sigma 1 -->
+                  <circle id="ptSigma1" cx="400" cy="260" r="5" fill="#10b981" stroke="#0f172a" stroke-width="1.5" />
+                  <text id="lblSigma1" x="408" y="252" fill="#10b981" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">σ₁</text>
+
+                  <!-- Sigma 2 -->
+                  <circle id="ptSigma2" cx="120" cy="260" r="5" fill="#f43f5e" stroke="#0f172a" stroke-width="1.5" />
+                  <text id="lblSigma2" x="112" y="252" fill="#f43f5e" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" text-anchor="end">σ₂</text>
+
+                  <!-- Tau Max Top & Bottom -->
+                  <circle id="ptTauTop" cx="260" cy="120" r="4.5" fill="#f59e0b" stroke="#0f172a" stroke-width="1.5" />
+                  <text id="lblTauTop" x="260" y="110" fill="#f59e0b" font-family="JetBrains Mono, monospace" font-size="10.5" text-anchor="middle">τ_max</text>
+                  <circle id="ptTauBot" cx="260" cy="400" r="4.5" fill="#f59e0b" stroke="#0f172a" stroke-width="1.5" />
+
+                  <!-- Initial Reference Points X and Y -->
+                  <circle id="ptRefX" cx="340" cy="310" r="4.5" fill="#0f172a" stroke="#38bdf8" stroke-width="2" />
+                  <text id="lblRefX" x="350" y="314" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="10.5">X(0°)</text>
+
+                  <circle id="ptRefY" cx="180" cy="210" r="4.5" fill="#0f172a" stroke="#a855f7" stroke-width="2" />
+                  <text id="lblRefY" x="170" y="206" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="10.5" text-anchor="end">Y(0°)</text>
+                </g>
+
+                <!-- Transformed Point Y' -->
+                <circle id="ptTransY" cx="180" cy="210" r="6.5" fill="#a855f7" stroke="#ffffff" stroke-width="2" />
+                <text id="lblTransY" x="165" y="200" fill="#d8b4fe" font-family="JetBrains Mono, monospace" font-size="11.5" font-weight="700">Y'</text>
+
+                <!-- Transformed Point X' (Interactive Draggable Handle) -->
+                <circle id="ptTransXPulse" cx="340" cy="310" r="9" fill="none" stroke="#38bdf8" stroke-width="2" class="pulse-circle pointer-events-none" />
+                <circle id="ptTransX" cx="340" cy="310" r="8" fill="#38bdf8" stroke="#ffffff" stroke-width="2.5" class="draggable-handle" />
+                <text id="lblTransX" x="354" y="314" fill="#7dd3fc" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700">X'</text>
+              </svg>
+
+              <!-- Overlay Corner Badge -->
+              <div class="absolute bottom-2.5 left-3 pointer-events-none bg-slate-950/85 border border-slate-800 px-2.5 py-1 rounded-lg text-[11px] font-mono text-slate-300">
+                Radius R = <span id="overlayRadius" class="text-amber-400 font-semibold">78.10</span> <span class="unit-label text-slate-500">MPa</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2D DIFFERENTIAL STRESS ELEMENT (5 cols) -->
+          <div class="xl:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-xl">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                  <span>2D Stress Element</span>
+                  <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-emerald-300 border border-slate-700">Drag Element to Rotate</span>
+                </h3>
+              </div>
+              <span id="elementAngleBadge" class="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-md">
+                θ = +25.0°
+              </span>
+            </div>
+
+            <!-- Stress Element Interactive SVG -->
+            <div class="relative w-full aspect-square max-h-[460px] mx-auto rounded-xl bg-slate-950 border border-slate-800/90 blueprint-bg overflow-hidden select-none">
+              <svg id="elementSvg" viewBox="0 0 420 420" class="w-full h-full element-rotatable">
+                <defs>
+                  <!-- Arrowhead Markers for Normal X', Normal Y', and Shear Tau -->
+                  <marker id="arrowSky" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#38bdf8" />
+                  </marker>
+                  <marker id="arrowPurple" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#a855f7" />
+                  </marker>
+                  <marker id="arrowAmber" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+                    <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#f59e0b" />
+                  </marker>
+                  <marker id="arrowAxis" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+                    <path d="M 0 2 L 8 5 L 0 8 z" fill="#64748b" />
+                  </marker>
+                </defs>
+
+                <!-- Fixed Reference Axes (X, Y) -->
+                <g stroke="#475569" stroke-width="1.2" stroke-dasharray="4 4">
+                  <line x1="35" y1="210" x2="385" y2="210" marker-end="url(#arrowAxis)" />
+                  <line x1="210" y1="385" x2="210" y2="35" marker-end="url(#arrowAxis)" />
+                </g>
+                <text x="390" y="214" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600">x</text>
+                <text x="206" y="26" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="12" font-weight="600">y</text>
+
+                <!-- Unrotated Ghost Reference Square (0 deg) -->
+                <rect x="145" y="145" width="130" height="130" rx="4" fill="none" stroke="#334155" stroke-width="1.2" stroke-dasharray="3 3" />
+
+                <!-- Angle Arc between +x axis and +x' axis -->
+                <path id="elemThetaArc" d="" fill="rgba(16, 185, 129, 0.14)" stroke="#10b981" stroke-width="1.8" />
+                <text id="elemThetaText" x="285" y="195" fill="#10b981" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600">θ</text>
+
+                <!-- ROTATING GROUP FOR TRANSFORMED ELEMENT -->
+                <g id="rotatingElementGroup" transform="translate(210, 210) rotate(-25)">
+                  <!-- Rotated Local Axes x' and y' -->
+                  <line x1="-165" y1="0" x2="165" y2="0" stroke="#38bdf8" stroke-width="1" stroke-dasharray="2 3" opacity="0.45" />
+                  <line x1="0" y1="165" x2="0" y2="-165" stroke="#a855f7" stroke-width="1" stroke-dasharray="2 3" opacity="0.45" />
+                  <text x="172" y="4" fill="#38bdf8" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">x'</text>
+                  <text x="-5" y="-172" fill="#a855f7" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700">y'</text>
+
+                  <!-- The Deformable/Rotatable Differential Cube -->
+                  <rect x="-65" y="-65" width="130" height="130" rx="8" fill="#1e293b" fill-opacity="0.9" stroke="#94a3b8" stroke-width="2.2" />
+                  
+                  <!-- Face Indicators (+x' and +y') -->
+                  <line x1="65" y1="-65" x2="65" y2="65" stroke="#38bdf8" stroke-width="3.5" />
+                  <line x1="-65" y1="-65" x2="65" y2="-65" stroke="#a855f7" stroke-width="3.5" />
+
+                  <!-- Center Pin -->
+                  <circle cx="0" cy="0" r="3.5" fill="#e2e8f0" />
+
+                  <!-- Dynamic Vectors Group (Normal & Shear Arrows rendered via JS) -->
+                  <g id="elementVectorsGroup"></g>
+                </g>
+
+                <!-- Counter-rotated Floating Labels for Stress Values on Element -->
+                <g id="elementValueLabelsGroup"></g>
+              </svg>
+
+              <!-- Bottom Helper Note -->
+              <div class="absolute bottom-2.5 left-3 right-3 flex items-center justify-between pointer-events-none text-[11px] font-mono text-slate-400 bg-slate-950/85 border border-slate-800 px-2.5 py-1 rounded-lg">
+                <span>Blue face: <strong class="text-sky-400">+x'</strong></span>
+                <span>Purple face: <strong class="text-purple-400">+y'</strong></span>
+                <span>CCW = <strong class="text-emerald-400">+θ</strong></span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Step-by-Step Analytical Equations & Stress Transformation Formulas -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+              Analytical Transformation & Live Substitution
+            </h3>
+            <span class="text-xs font-mono text-slate-400">2D Plane Stress Mechanics Equations</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+            <!-- Box 1: Normal & Shear Transformation Equations -->
+            <div class="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2.5">
+              <div class="text-slate-300 font-sans font-semibold text-xs border-b border-slate-800 pb-1.5">
+                1. Stress Transformation at θ = <span id="eqThetaVal" class="text-emerald-400 font-mono">25.0°</span> (2θ = <span id="eqTwoThetaVal" class="text-emerald-400 font-mono">50.0°</span>)
+              </div>
+              <div class="text-slate-400 leading-relaxed">
+                <div>σ<sub>x'</sub> = σ<sub>avg</sub> + [(σ<sub>x</sub> - σ<sub>y</sub>)/2]·cos(2θ) + τ<sub>xy</sub>·sin(2θ)</div>
+                <div id="eqSubSigmaXp" class="text-sky-300 mt-0.5">σ<sub>x'</sub> = 20.0 + (60.0)·cos(50.0°) + (50.0)·sin(50.0°) = 96.88 MPa</div>
+              </div>
+              <div class="text-slate-400 leading-relaxed pt-1 border-t border-slate-800/60">
+                <div>σ<sub>y'</sub> = σ<sub>avg</sub> - [(σ<sub>x</sub> - σ<sub>y</sub>)/2]·cos(2θ) - τ<sub>xy</sub>·sin(2θ)</div>
+                <div id="eqSubSigmaYp" class="text-purple-300 mt-0.5">σ<sub>y'</sub> = 20.0 - (60.0)·cos(50.0°) - (50.0)·sin(50.0°) = -56.88 MPa</div>
+              </div>
+              <div class="text-slate-400 leading-relaxed pt-1 border-t border-slate-800/60">
+                <div>τ<sub>x'y'</sub> = -[(σ<sub>x</sub> - σ<sub>y</sub>)/2]·sin(2θ) + τ<sub>xy</sub>·cos(2θ)</div>
+                <div id="eqSubTauXpYp" class="text-amber-300 mt-0.5">τ<sub>x'y'</sub> = -(60.0)·sin(50.0°) + (50.0)·cos(50.0°) = -13.82 MPa</div>
+              </div>
+            </div>
+
+            <!-- Box 2: Mohr's Circle Geometry & Principal Values -->
+            <div class="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2.5">
+              <div class="text-slate-300 font-sans font-semibold text-xs border-b border-slate-800 pb-1.5">
+                2. Mohr's Circle Parameters & Stress Invariants
+              </div>
+              <div class="text-slate-400 leading-relaxed">
+                <div>Center: C = σ<sub>avg</sub> = (σ<sub>x</sub> + σ<sub>y</sub>) / 2</div>
+                <div id="eqSubCenter" class="text-slate-200 mt-0.5">C = (80 + (-40)) / 2 = 20.00 MPa</div>
+              </div>
+              <div class="text-slate-400 leading-relaxed pt-1 border-t border-slate-800/60">
+                <div>Radius: R = √[ ((σ<sub>x</sub> - σ<sub>y</sub>)/2)² + τ<sub>xy</sub>² ] = τ<sub>max</sub></div>
+                <div id="eqSubRadius" class="text-amber-300 mt-0.5">R = √[ (60.0)² + (50.0)² ] = 78.10 MPa</div>
+              </div>
+              <div class="text-slate-400 leading-relaxed pt-1 border-t border-slate-800/60">
+                <div>Principal Stresses: σ<sub>1,2</sub> = C ± R</div>
+                <div id="eqSubPrincipals" class="text-emerald-300 mt-0.5">σ₁ = 98.10 MPa,  σ₂ = -58.10 MPa  (I₁ = σ₁ + σ₂ = 40.0 MPa)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </div>
+  </main>
+
+  <!-- Application Logic -->
+  <script>
+    (function () {
+      // --- State ---
+      const state = {
+        sigmaX: 80,
+        sigmaY: -40,
+        tauXY: 50,
+        theta: 25,          // degrees, -180 to 180
+        unit: 'MPa',
+        tauDownPositive: true, // Standard Mechanics of Materials convention (+tau downward so 2*theta is CCW on Mohr's Circle)
+        isAnimating: false,
+        animFrameId: null
+      };
+
+      const presets = {
+        biaxial:        { sigmaX: 80,  sigmaY: -40, tauXY: 50,  theta: 25 },
+        uniaxial:       { sigmaX: 120, sigmaY: 0,   tauXY: 0,   theta: 30 },
+        pureshear:      { sigmaX: 0,   sigmaY: 0,   tauXY: 75,  theta: 45 },
+        hydrostatic:    { sigmaX: 90,  sigmaY: 90,  tauXY: 0,   theta: 0  },
+        pressurevessel: { sigmaX: 60,  sigmaY: 120, tauXY: 0,   theta: 35 },
+        compression:    { sigmaX: -30, sigmaY: -110,tauXY: -45, theta: -20}
+      };
+
+      // --- DOM Elements ---
+      const els = {
+        presetSelect: document.getElementById('presetSelect'),
+        conventionToggleBtn: document.getElementById('conventionToggleBtn'),
+        conventionLabel: document.getElementById('conventionLabel'),
+        unitBtns: document.querySelectorAll('.unit-btn'),
+        unitLabels: document.querySelectorAll('.unit-label'),
+        resetDefaultBtn: document.getElementById('resetDefaultBtn'),
+
+        sigmaXNum: document.getElementById('sigmaXNum'),
+        sigmaXRange: document.getElementById('sigmaXRange'),
+        sigmaXTag: document.getElementById('sigmaXTag'),
+
+        sigmaYNum: document.getElementById('sigmaYNum'),
+        sigmaYRange: document.getElementById('sigmaYRange'),
+        sigmaYTag: document.getElementById('sigmaYTag'),
+
+        tauXYNum: document.getElementById('tauXYNum'),
+        tauXYRange: document.getElementById('tauXYRange'),
+        tauXYTag: document.getElementById('tauXYTag'),
+
+        thetaNum: document.getElementById('thetaNum'),
+        thetaRange: document.getElementById('thetaRange'),
+        twoThetaLabel: document.getElementById('twoThetaLabel'),
+
+        animateBtn: document.getElementById('animateBtn'),
+        animateBtnText: document.getElementById('animateBtnText'),
+        playIcon: document.getElementById('playIcon'),
+
+        snapZeroBtn: document.getElementById('snapZeroBtn'),
+        snap45Btn: document.getElementById('snap45Btn'),
+        snapPrincipalBtn: document.getElementById('snapPrincipalBtn'),
+        snapShearBtn: document.getElementById('snapShearBtn'),
+        btnThetaPVal: document.getElementById('btnThetaPVal'),
+        btnThetaSVal: document.getElementById('btnThetaSVal'),
+
+        // Telemetry & Results
+        resSigma1: document.getElementById('resSigma1'),
+        resSigma2: document.getElementById('resSigma2'),
+        resTauMax: document.getElementById('resTauMax'),
+        resSigmaAvg: document.getElementById('resSigmaAvg'),
+        resThetaP: document.getElementById('resThetaP'),
+        resThetaS: document.getElementById('resThetaS'),
+
+        liveSigmaXp: document.getElementById('liveSigmaXp'),
+        liveSigmaXpType: document.getElementById('liveSigmaXpType'),
+        liveSigmaYp: document.getElementById('liveSigmaYp'),
+        liveSigmaYpType: document.getElementById('liveSigmaYpType'),
+        liveTauXpYp: document.getElementById('liveTauXpYp'),
+        liveTauXpYpType: document.getElementById('liveTauXpYpType'),
+
+        // Mohr's Circle SVG Elements
+        mohrSvg: document.getElementById('mohrSvg'),
+        mohrGridGroup: document.getElementById('mohrGridGroup'),
+        mohrAxesGroup: document.getElementById('mohrAxesGroup'),
+        mohrMainCircle: document.getElementById('mohrMainCircle'),
+        arcTwoThetaP: document.getElementById('arcTwoThetaP'),
+        arcTwoTheta: document.getElementById('arcTwoTheta'),
+        arcTwoThetaText: document.getElementById('arcTwoThetaText'),
+        lineRefXY: document.getElementById('lineRefXY'),
+        lineTransXY: document.getElementById('lineTransXY'),
+        projLineX: document.getElementById('projLineX'),
+        projLineY: document.getElementById('projLineY'),
+        lineMaxShear: document.getElementById('lineMaxShear'),
+        ptCenter: document.getElementById('ptCenter'),
+        lblCenter: document.getElementById('lblCenter'),
+        ptSigma1: document.getElementById('ptSigma1'),
+        lblSigma1: document.getElementById('lblSigma1'),
+        ptSigma2: document.getElementById('ptSigma2'),
+        lblSigma2: document.getElementById('lblSigma2'),
+        ptTauTop: document.getElementById('ptTauTop'),
+        lblTauTop: document.getElementById('lblTauTop'),
+        ptTauBot: document.getElementById('ptTauBot'),
+        ptRefX: document.getElementById('ptRefX'),
+        lblRefX: document.getElementById('lblRefX'),
+        ptRefY: document.getElementById('ptRefY'),
+        lblRefY: document.getElementById('lblRefY'),
+        ptTransX: document.getElementById('ptTransX'),
+        ptTransXPulse: document.getElementById('ptTransXPulse'),
+        lblTransX: document.getElementById('lblTransX'),
+        ptTransY: document.getElementById('ptTransY'),
+        lblTransY: document.getElementById('lblTransY'),
+        overlayRadius: document.getElementById('overlayRadius'),
+
+        // 2D Stress Element SVG Elements
+        elementSvg: document.getElementById('elementSvg'),
+        elementAngleBadge: document.getElementById('elementAngleBadge'),
+        elemThetaArc: document.getElementById('elemThetaArc'),
+        elemThetaText: document.getElementById('elemThetaText'),
+        rotatingElementGroup: document.getElementById('rotatingElementGroup'),
+        elementVectorsGroup: document.getElementById('elementVectorsGroup'),
+        elementValueLabelsGroup: document.getElementById('elementValueLabelsGroup'),
+
+        // Equation Readouts
+        eqThetaVal: document.getElementById('eqThetaVal'),
+        eqTwoThetaVal: document.getElementById('eqTwoThetaVal'),
+        eqSubSigmaXp: document.getElementById('eqSubSigmaXp'),
+        eqSubSigmaYp: document.getElementById('eqSubSigmaYp'),
+        eqSubTauXpYp: document.getElementById('eqSubTauXpYp'),
+        eqSubCenter: document.getElementById('eqSubCenter'),
+        eqSubRadius: document.getElementById('eqSubRadius'),
+        eqSubPrincipals: document.getElementById('eqSubPrincipals')
+      };
+
+      // --- Mechanics Calculations ---
+      function computeMohrMetrics() {
+        const { sigmaX, sigmaY, tauXY, theta } = state;
+        const rad = (theta * Math.PI) / 180;
+        const twoRad = 2 * rad;
+
+        const sigmaAvg = 0.5 * (sigmaX + sigmaY);
+        const diffHalf = 0.5 * (sigmaX - sigmaY);
+        const R = Math.hypot(diffHalf, tauXY);
+
+        const sigma1 = sigmaAvg + R;
+        const sigma2 = sigmaAvg - R;
+        const tauMax = R;
+
+        // Transformed stresses at angle theta (CCW from x-axis)
+        const sigmaXp = sigmaAvg + diffHalf * Math.cos(twoRad) + tauXY * Math.sin(twoRad);
+        const sigmaYp = sigmaAvg - diffHalf * Math.cos(twoRad) - tauXY * Math.sin(twoRad);
+        const tauXpYp = -diffHalf * Math.sin(twoRad) + tauXY * Math.cos(twoRad);
+
+        // Principal angles (degrees)
+        let thetaP1 = 0;
+        if (R > 1e-9) {
+          thetaP1 = (0.5 * Math.atan2(tauXY, diffHalf) * 180) / Math.PI;
+        }
+        let thetaP2 = thetaP1 > 0 ? thetaP1 - 90 : thetaP1 + 90;
+
+        // Max in-plane shear angles (degrees)
+        let thetaS1 = thetaP1 - 45;
+        if (thetaS1 < -90) thetaS1 += 180;
+        let thetaS2 = thetaS1 > 0 ? thetaS1 - 90 : thetaS1 + 90;
+
+        return {
+          sigmaAvg,
+          diffHalf,
+          R,
+          sigma1,
+          sigma2,
+          tauMax,
+          sigmaXp,
+          sigmaYp,
+          tauXpYp,
+          thetaP1,
+          thetaP2,
+          thetaS1,
+          thetaS2
+        };
+      }
+
+      // --- Helper: SVG Circular Arc Path ---
+      function describeArc(cx, cy, r, startAngleRad, endAngleRad) {
+        let diff = endAngleRad - startAngleRad;
+        // Normalize diff to [-PI, PI] for shortest arc or direct sweep
+        if (Math.abs(diff) < 1e-4) return '';
+        const startX = cx + r * Math.cos(startAngleRad);
+        const startY = cy + r * Math.sin(startAngleRad);
+        const endX = cx + r * Math.cos(endAngleRad);
+        const endY = cy + r * Math.sin(endAngleRad);
+        const largeArc = Math.abs(diff) > Math.PI ? 1 : 0;
+        const sweep = diff > 0 ? 1 : 0;
+        return `M ${cx} ${cy} L ${startX} ${startY} A ${r} ${r} 0 ${largeArc} ${sweep} ${endX} ${endY} Z`;
+      }
+
+      // --- Render Mohr's Circle SVG ---
+      let currentMohrScale = { originX: 260, originY: 260, scale: 1 };
+
+      function renderMohrCircle(m) {
+        const W = 520;
+        const H = 520;
+        const pad = 68;
+
+        // Determine bounds in stress space so origin (0,0) and the entire circle fit nicely
+        const minSigma = Math.min(0, m.sigma2, m.sigmaAvg - m.R);
+        const maxSigma = Math.max(0, m.sigma1, m.sigmaAvg + m.R);
+        const maxTau = Math.max(m.R, 20);
+
+        const spanX = Math.max(maxSigma - minSigma, 40);
+        const spanY = Math.max(2 * maxTau, 40);
+        const maxSpan = Math.max(spanX, spanY) * 1.28;
+
+        const plotWidth = W - 2 * pad;
+        const scale = plotWidth / maxSpan;
+
+        // Center the bounding box of [minSigma, maxSigma] horizontally
+        const midSigma = 0.5 * (minSigma + maxSigma);
+        const originX = W / 2 - midSigma * scale;
+        const originY = H / 2;
+
+        currentMohrScale = { originX, originY, scale };
+
+        // Sign multiplier for vertical axis:
+        // If tauDownPositive is true (+tau downward), SVG +y matches +tau directly!
+        const tauSign = state.tauDownPositive ? 1 : -1;
+
+        const toSvgX = (sigma) => originX + sigma * scale;
+        const toSvgY = (tau) => originY + tau * tauSign * scale;
+
+        // 1. Draw Grid Lines & Tick Labels
+        const rawStep = maxSpan / 6;
+        const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+        const residual = rawStep / mag;
+        const step = residual > 5 ? 10 * mag : residual > 2 ? 5 * mag : residual > 1 ? 2 * mag : mag;
+
+        let gridHtml = '';
+        const startValX = Math.floor((0 - originX) / scale / step) * step;
+        const endValX = Math.ceil((W - originX) / scale / step) * step;
+
+        for (let v = startValX; v <= endValX; v += step) {
+          const x = toSvgX(v);
+          if (x < 20 || x > W - 20) continue;
+          gridHtml += `<line x1="${x}" y1="20" x2="${x}" y2="${H - 20}" stroke="#1e293b" stroke-width="1" />`;
+          if (Math.abs(v) > 1e-6) {
+            gridHtml += `<text x="${x}" y="${ Math.min(Math.max(originY + 15, 32), H - 12) }" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9.5" text-anchor="middle">${Math.round(v)}</text>`;
+          }
+        }
+
+        const startValY = Math.floor((-originY) / scale / step) * step;
+        const endValY = Math.ceil((H - originY) / scale / step) * step;
+        for (let v = startValY; v <= endValY; v += step) {
+          const y = originY + v * scale;
+          if (y < 20 || y > H - 20) continue;
+          gridHtml += `<line x1="20" y1="${y}" x2="${W - 20}" y2="${y}" stroke="#1e293b" stroke-width="1" />`;
+          if (Math.abs(v) > 1e-6) {
+            const tauVal = Math.round(v * tauSign);
+            gridHtml += `<text x="${ Math.min(Math.max(originX - 8, 28), W - 28) }" y="${y + 3}" fill="#64748b" font-family="JetBrains Mono, monospace" font-size="9.5" text-anchor="end">${tauVal}</text>`;
+          }
+        }
+        els.mohrGridGroup.innerHTML = gridHtml;
+
+        // 2. Draw Main Coordinate Axes (sigma & tau)
+        const clampedOriginX = Math.min(Math.max(originX, 24), W - 24);
+        const topTauLabel = state.tauDownPositive ? `-τ (${state.unit})` : `+τ (${state.unit})`;
+        const botTauLabel = state.tauDownPositive ? `+τ (${state.unit}) [CW]` : `-τ (${state.unit})`;
+
+        els.mohrAxesGroup.innerHTML = `
+          <line x1="16" y1="${originY}" x2="${W - 16}" y2="${originY}" stroke="#475569" stroke-width="1.6" />
+          <line x1="${clampedOriginX}" y1="16" x2="${clampedOriginX}" y2="${H - 16}" stroke="#475569" stroke-width="1.6" />
+          <text x="${W - 20}" y="${originY - 8}" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="11" font-weight="600" text-anchor="end">+σ (${state.unit})</text>
+          <text x="${clampedOriginX + 8}" y="28" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">${topTauLabel}</text>
+          <text x="${clampedOriginX + 8}" y="${H - 20}" fill="#94a3b8" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="600">${botTauLabel}</text>
+        `;
+
+        // 3. Circle & Key Points Coordinates
+        const cx = toSvgX(m.sigmaAvg);
+        const cy = originY;
+        const rPx = Math.max(m.R * scale, 2);
+
+        els.mohrMainCircle.setAttribute('cx', cx);
+        els.mohrMainCircle.setAttribute('cy', cy);
+        els.mohrMainCircle.setAttribute('r', rPx);
+
+        // Reference Points X(sigmaX, tauXY) and Y(sigmaY, -tauXY)
+        const refXx = toSvgX(state.sigmaX);
+        const refXy = toSvgY(state.tauXY);
+        const refYx = toSvgX(state.sigmaY);
+        const refYy = toSvgY(-state.tauXY);
+
+        els.lineRefXY.setAttribute('x1', refXx);
+        els.lineRefXY.setAttribute('y1', refXy);
+        els.lineRefXY.setAttribute('x2', refYx);
+        els.lineRefXY.setAttribute('y2', refYy);
+
+        els.ptRefX.setAttribute('cx', refXx);
+        els.ptRefX.setAttribute('cy', refXy);
+        els.lblRefX.setAttribute('x', refXx + (refXx >= cx ? 10 : -10));
+        els.lblRefX.setAttribute('y', refXy + (refXy >= cy ? 14 : -8));
+        els.lblRefX.setAttribute('text-anchor', refXx >= cx ? 'start' : 'end');
+
+        els.ptRefY.setAttribute('cx', refYx);
+        els.ptRefY.setAttribute('cy', refYy);
+        els.lblRefY.setAttribute('x', refYx + (refYx >= cx ? 10 : -10));
+        els.lblRefY.setAttribute('y', refYy + (refYy >= cy ? 14 : -8));
+        els.lblRefY.setAttribute('text-anchor', refYx >= cx ? 'start' : 'end');
+
+        // Transformed Points X'(sigmaXp, tauXpYp) and Y'(sigmaYp, -tauXpYp)
+        const transXx = toSvgX(m.sigmaXp);
+        const transXy = toSvgY(m.tauXpYp);
+        const transYx = toSvgX(m.sigmaYp);
+        const transYy = toSvgY(-m.tauXpYp);
+
+        els.lineTransXY.setAttribute('x1', transXx);
+        els.lineTransXY.setAttribute('y1', transXy);
+        els.lineTransXY.setAttribute('x2', transYx);
+        els.lineTransXY.setAttribute('y2', transYy);
+
+        els.projLineX.setAttribute('x1', transXx);
+        els.projLineX.setAttribute('y1', transXy);
+        els.projLineX.setAttribute('x2', transXx);
+        els.projLineX.setAttribute('y2', originY);
+
+        els.projLineY.setAttribute('x1', transXx);
+        els.projLineY.setAttribute('y1', transXy);
+        els.projLineY.setAttribute('x2', clampedOriginX);
+        els.projLineY.setAttribute('y2', transXy);
+
+        els.ptTransX.setAttribute('cx', transXx);
+        els.ptTransX.setAttribute('cy', transXy);
+        els.ptTransXPulse.setAttribute('cx', transXx);
+        els.ptTransXPulse.setAttribute('cy', transXy);
+
+        const offsetX = transXx >= cx ? 14 : -14;
+        const offsetY = transXy >= cy ? 16 : -10;
+        els.lblTransX.setAttribute('x', transXx + offsetX);
+        els.lblTransX.setAttribute('y', transXy + offsetY);
+        els.lblTransX.setAttribute('text-anchor', transXx >= cx ? 'start' : 'end');
+        els.lblTransX.textContent = `X'(${m.sigmaXp.toFixed(0)}, ${m.tauXpYp.toFixed(0)})`;
+
+        els.ptTransY.setAttribute('cx', transYx);
+        els.ptTransY.setAttribute('cy', transYy);
+        els.lblTransY.setAttribute('x', transYx + (transYx >= cx ? 12 : -12));
+        els.lblTransY.setAttribute('y', transYy + (transYy >= cy ? 15 : -10));
+        els.lblTransY.setAttribute('text-anchor', transYx >= cx ? 'start' : 'end');
+        els.lblTransY.textContent = `Y'(${m.sigmaYp.toFixed(0)}, ${(-m.tauXpYp).toFixed(0)})`;
+
+        // Center, Principal & Max Shear Points
+        els.ptCenter.setAttribute('cx', cx);
+        els.ptCenter.setAttribute('cy', cy);
+        els.lblCenter.setAttribute('x', cx);
+        els.lblCenter.setAttribute('y', cy + 18);
+        els.lblCenter.textContent = `C(${m.sigmaAvg.toFixed(0)}, 0)`;
+
+        const s1x = toSvgX(m.sigma1);
+        const s2x = toSvgX(m.sigma2);
+        els.ptSigma1.setAttribute('cx', s1x);
+        els.ptSigma1.setAttribute('cy', cy);
+        els.lblSigma1.setAttribute('x', s1x + 8);
+        els.lblSigma1.setAttribute('y', cy - 8);
+
+        els.ptSigma2.setAttribute('cx', s2x);
+        els.ptSigma2.setAttribute('cy', cy);
+        els.lblSigma2.setAttribute('x', s2x - 8);
+        els.lblSigma2.setAttribute('y', cy - 8);
+
+        const tauTopY = cy - rPx;
+        const tauBotY = cy + rPx;
+        els.lineMaxShear.setAttribute('x1', cx);
+        els.lineMaxShear.setAttribute('y1', tauTopY);
+        els.lineMaxShear.setAttribute('x2', cx);
+        els.lineMaxShear.setAttribute('y2', tauBotY);
+
+        els.ptTauTop.setAttribute('cx', cx);
+        els.ptTauTop.setAttribute('cy', tauTopY);
+        els.lblTauTop.setAttribute('x', cx);
+        els.lblTauTop.setAttribute('y', tauTopY - 8);
+        els.ptTauBot.setAttribute('cx', cx);
+        els.ptTauBot.setAttribute('cy', tauBotY);
+
+        // 4. Angle Sector Arcs (2*theta_p and 2*theta)
+        if (rPx > 18) {
+          const refAngle = Math.atan2(refXy - cy, refXx - cx);
+          // 2*theta rotation in screen coordinates:
+          // When tauDownPositive is true, screen Y is downward so CCW in math is CW on screen (-2*theta).
+          // Wait: let's check! In SVG, +x is right, +y is DOWN.
+          // If +tau is DOWN, then X = (sigma_x, tau_xy).
+          // At angle theta, X' = (sigmaAvg + R cos(2theta_p - 2theta), R sin(2theta_p - 2theta)).
+          // So as theta increases (+CCW on element), the angle in SVG (atan2(y,x)) decreases by 2*theta (which is visually Counter-Clockwise on screen!).
+          const rotDelta = state.tauDownPositive
+            ? (-2 * state.theta * Math.PI) / 180
+            : (2 * state.theta * Math.PI) / 180;
+          const transAngle = refAngle + rotDelta;
+
+          const arcRadius = Math.min(46, rPx * 0.45);
+          els.arcTwoTheta.setAttribute('d', describeArc(cx, cy, arcRadius, refAngle, transAngle));
+
+          const midAngle = refAngle + rotDelta * 0.5;
+          const lblR = arcRadius + 16;
+          els.arcTwoThetaText.setAttribute('x', cx + lblR * Math.cos(midAngle));
+          els.arcTwoThetaText.setAttribute('y', cy + lblR * Math.sin(midAngle) + 4);
+          els.arcTwoThetaText.setAttribute('text-anchor', 'middle');
+          els.arcTwoThetaText.textContent = Math.abs(state.theta) > 1 ? `2θ=${(2 * state.theta).toFixed(0)}°` : '';
+
+          // Principal angle arc from reference X to horizontal +sigma axis (angle 0)
+          const arcPRadius = Math.min(30, rPx * 0.3);
+          els.arcTwoThetaP.setAttribute('d', describeArc(cx, cy, arcPRadius, 0, refAngle));
+        } else {
+          els.arcTwoTheta.setAttribute('d', '');
+          els.arcTwoThetaP.setAttribute('d', '');
+          els.arcTwoThetaText.textContent = '';
+        }
+
+        els.overlayRadius.textContent = m.R.toFixed(2);
+      }
+
+      // --- Render 2D Differential Stress Element SVG ---
+      function renderStressElement(m) {
+        const cx = 210;
+        const cy = 210;
+        const boxHalf = 65;
+
+        // In SVG, positive rotate() is Clockwise, so Counter-Clockwise +theta is rotate(-theta)
+        els.rotatingElementGroup.setAttribute('transform', `translate(${cx}, ${cy}) rotate(${-state.theta})`);
+        els.elementAngleBadge.textContent = `θ = ${state.theta >= 0 ? '+' : ''}${state.theta.toFixed(1)}°`;
+
+        // Draw orientation arc between +x (0 rad) and +x' (-theta rad in SVG)
+        const thetaRadSvg = (-state.theta * Math.PI) / 180;
+        if (Math.abs(state.theta) > 0.5) {
+          els.elemThetaArc.setAttribute('d', describeArc(cx, cy, 92, 0, thetaRadSvg));
+          const midA = thetaRadSvg * 0.5;
+          els.elemThetaText.setAttribute('x', cx + 108 * Math.cos(midA));
+          els.elemThetaText.setAttribute('y', cy + 108 * Math.sin(midA) + 4);
+          els.elemThetaText.textContent = `${state.theta.toFixed(1)}°`;
+        } else {
+          els.elemThetaArc.setAttribute('d', '');
+          els.elemThetaText.textContent = '';
+        }
+
+        // Dynamic Normal & Shear Stress Vectors inside rotatingElementGroup
+        const maxRef = Math.max(Math.abs(m.sigma1), Math.abs(m.sigma2), m.R, 40);
+        const calcLen = (val) => Math.min(58, Math.max(24, (Math.abs(val) / maxRef) * 56));
+
+        let vectorsSvg = '';
+
+        // 1. Normal Stress X' (on +x' and -x' faces)
+        if (Math.abs(m.sigmaXp) >= 0.2) {
+          const lenX = calcLen(m.sigmaXp);
+          const isTens = m.sigmaXp > 0;
+          const padFace = 6;
+          // +x' face (right) and -x' face (left)
+          if (isTens) {
+            // Pulling outward
+            vectorsSvg += `
+              <line x1="${boxHalf + padFace}" y1="0" x2="${boxHalf + padFace + lenX}" y2="0" stroke="#38bdf8" stroke-width="2.6" marker-end="url(#arrowSky)" />
+              <line x1="${-boxHalf - padFace}" y1="0" x2="${-boxHalf - padFace - lenX}" y2="0" stroke="#38bdf8" stroke-width="2.6" marker-end="url(#arrowSky)" />
+            `;
+          } else {
+            // Pushing inward toward face
+            vectorsSvg += `
+              <line x1="${boxHalf + padFace + lenX}" y1="0" x2="${boxHalf + padFace + 2}" y2="0" stroke="#38bdf8" stroke-width="2.6" marker-end="url(#arrowSky)" />
+              <line x1="${-boxHalf - padFace - lenX}" y1="0" x2="${-boxHalf - padFace - 2}" y2="0" stroke="#38bdf8" stroke-width="2.6" marker-end="url(#arrowSky)" />
+            `;
+          }
+        }
+
+        // 2. Normal Stress Y' (on +y' top face and -y' bottom face)
+        // Note: in local SVG coordinates, +y' is UP (negative y)
+        if (Math.abs(m.sigmaYp) >= 0.2) {
+          const lenY = calcLen(m.sigmaYp);
+          const isTens = m.sigmaYp > 0;
+          const padFace = 6;
+          if (isTens) {
+            vectorsSvg += `
+              <line x1="0" y1="${-boxHalf - padFace}" x2="0" y2="${-boxHalf - padFace - lenY}" stroke="#a855f7" stroke-width="2.6" marker-end="url(#arrowPurple)" />
+              <line x1="0" y1="${boxHalf + padFace}" x2="0" y2="${boxHalf + padFace + lenY}" stroke="#a855f7" stroke-width="2.6" marker-end="url(#arrowPurple)" />
+            `;
+          } else {
+            vectorsSvg += `
+              <line x1="0" y1="${-boxHalf - padFace - lenY}" x2="0" y2="${-boxHalf - padFace - 2}" stroke="#a855f7" stroke-width="2.6" marker-end="url(#arrowPurple)" />
+              <line x1="0" y1="${boxHalf + padFace + lenY}" x2="0" y2="${boxHalf + padFace + 2}" stroke="#a855f7" stroke-width="2.6" marker-end="url(#arrowPurple)" />
+            `;
+          }
+        }
+
+        // 3. Shear Stress X'Y' (on all 4 faces)
+        // Positive tau_x'y' on +x' face points in +y' direction (UP, which is negative y in SVG)
+        if (Math.abs(m.tauXpYp) >= 0.2) {
+          const halfShear = Math.min(42, Math.max(18, (Math.abs(m.tauXpYp) / maxRef) * 42));
+          const offsetShear = boxHalf + 13;
+          const dir = m.tauXpYp > 0 ? 1 : -1;
+
+          // +x' face (right): points toward -y*dir (since +y' is -y in SVG)
+          vectorsSvg += `<line x1="${offsetShear}" y1="${dir * halfShear}" x2="${offsetShear}" y2="${-dir * halfShear}" stroke="#f59e0b" stroke-width="2.2" marker-end="url(#arrowAmber)" />`;
+          // -x' face (left): opposite
+          vectorsSvg += `<line x1="${-offsetShear}" y1="${-dir * halfShear}" x2="${-offsetShear}" y2="${dir * halfShear}" stroke="#f59e0b" stroke-width="2.2" marker-end="url(#arrowAmber)" />`;
+          // +y' face (top, y = -offsetShear): points toward +x' * dir
+          vectorsSvg += `<line x1="${-dir * halfShear}" y1="${-offsetShear}" x2="${dir * halfShear}" y2="${-offsetShear}" stroke="#f59e0b" stroke-width="2.2" marker-end="url(#arrowAmber)" />`;
+          // -y' face (bottom, y = +offsetShear): points toward -x' * dir
+          vectorsSvg += `<line x1="${dir * halfShear}" y1="${offsetShear}" x2="${-dir * halfShear}" y2="${offsetShear}" stroke="#f59e0b" stroke-width="2.2" marker-end="url(#arrowAmber)" />`;
+        }
+
+        els.elementVectorsGroup.innerHTML = vectorsSvg;
+
+        // Floating upright value badges around the rotated element
+        const rad = (-state.theta * Math.PI) / 180;
+        const cosA = Math.cos(rad);
+        const sinA = Math.sin(rad);
+
+        // Position for +x' label
+        const distXp = 142;
+        const xLblPos = {
+          x: cx + distXp * cosA,
+          y: cy + distXp * sinA
+        };
+
+        // Position for +y' label (+y' is local (0, -distYp))
+        const distYp = 142;
+        const yLblPos = {
+          x: cx + distYp * sinA,
+          y: cy - distYp * cosA
+        };
+
+        els.elementValueLabelsGroup.innerHTML = `
+          <g transform="translate(${xLblPos.x}, ${xLblPos.y})">
+            <rect x="-36" y="-11" width="72" height="22" rx="5" fill="#090d16" fill-opacity="0.9" stroke="#38bdf8" stroke-width="1" />
+            <text x="0" y="4" fill="#38bdf8" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="700" text-anchor="middle">${m.sigmaXp.toFixed(1)}</text>
+          </g>
+          <g transform="translate(${yLblPos.x}, ${yLblPos.y})">
+            <rect x="-36" y="-11" width="72" height="22" rx="5" fill="#090d16" fill-opacity="0.9" stroke="#a855f7" stroke-width="1" />
+            <text x="0" y="4" fill="#d8b4fe" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="700" text-anchor="middle">${m.sigmaYp.toFixed(1)}</text>
+          </g>
+        `;
+      }
+
+      // --- Update All UI Readouts & Visuals ---
+      function updateAll() {
+        const m = computeMohrMetrics();
+
+        // Sync inputs
+        els.sigmaXNum.value = state.sigmaX;
+        els.sigmaXRange.value = Math.max(-200, Math.min(200, state.sigmaX));
+        els.sigmaXTag.textContent = state.sigmaX > 0 ? 'Tension (+x)' : state.sigmaX < 0 ? 'Compression (-x)' : 'Zero Normal X';
+
+        els.sigmaYNum.value = state.sigmaY;
+        els.sigmaYRange.value = Math.max(-200, Math.min(200, state.sigmaY));
+        els.sigmaYTag.textContent = state.sigmaY > 0 ? 'Tension (+y)' : state.sigmaY < 0 ? 'Compression (-y)' : 'Zero Normal Y';
+
+        els.tauXYNum.value = state.tauXY;
+        els.tauXYRange.value = Math.max(-200, Math.min(200, state.tauXY));
+        els.tauXYTag.textContent = state.tauXY > 0 ? 'CCW on +x face' : state.tauXY < 0 ? 'CW on +x face' : 'Zero Shear';
+
+        els.thetaNum.value = Number(state.theta.toFixed(1));
+        els.thetaRange.value = Math.max(-90, Math.min(90, state.theta));
+        els.twoThetaLabel.textContent = `Mohr Angle 2θ = ${(2 * state.theta >= 0 ? '+' : '')}${(2 * state.theta).toFixed(1)}°`;
+
+        // Quick Snap Button Labels
+        els.btnThetaPVal.textContent = `${m.thetaP1.toFixed(1)}°`;
+        els.btnThetaSVal.textContent = `${m.thetaS1.toFixed(1)}°`;
+
+        // Principal & Invariant Cards
+        els.resSigma1.textContent = m.sigma1.toFixed(2);
+        els.resSigma2.textContent = m.sigma2.toFixed(2);
+        els.resTauMax.textContent = m.tauMax.toFixed(2);
+        els.resSigmaAvg.textContent = m.sigmaAvg.toFixed(2);
+        els.resThetaP.textContent = `${m.thetaP1.toFixed(1)}° / ${m.thetaP2.toFixed(1)}°`;
+        els.resThetaS.textContent = `${m.thetaS1.toFixed(1)}° / ${m.thetaS2.toFixed(1)}°`;
+
+        // Live Transformed Ribbon
+        els.liveSigmaXp.textContent = m.sigmaXp.toFixed(2);
+        els.liveSigmaXpType.textContent = m.sigmaXp > 0.05 ? 'Tension on +x\' face' : m.sigmaXp < -0.05 ? 'Compression on +x\' face' : 'Neutral (0.00)';
+
+        els.liveSigmaYp.textContent = m.sigmaYp.toFixed(2);
+        els.liveSigmaYpType.textContent = m.sigmaYp > 0.05 ? 'Tension on +y\' face' : m.sigmaYp < -0.05 ? 'Compression on +y\' face' : 'Neutral (0.00)';
+
+        els.liveTauXpYp.textContent = m.tauXpYp.toFixed(2);
+        els.liveTauXpYpType.textContent = m.tauXpYp > 0.05 ? 'CCW couple on +x\' face' : m.tauXpYp < -0.05 ? 'CW couple on +x\' face' : 'Principal Plane (τ ≈ 0)';
+
+        // Equations Live Substitution
+        const twoTheta = (2 * state.theta).toFixed(1);
+        els.eqThetaVal.textContent = `${state.theta.toFixed(1)}°`;
+        els.eqTwoThetaVal.textContent = `${twoTheta}°`;
+
+        els.eqSubSigmaXp.textContent = `σx' = ${m.sigmaAvg.toFixed(1)} + (${m.diffHalf.toFixed(1)})·cos(${twoTheta}°) + (${state.tauXY.toFixed(1)})·sin(${twoTheta}°) = ${m.sigmaXp.toFixed(2)} ${state.unit}`;
+        els.eqSubSigmaYp.textContent = `σy' = ${m.sigmaAvg.toFixed(1)} - (${m.diffHalf.toFixed(1)})·cos(${twoTheta}°) - (${state.tauXY.toFixed(1)})·sin(${twoTheta}°) = ${m.sigmaYp.toFixed(2)} ${state.unit}`;
+        els.eqSubTauXpYp.textContent = `τx'y' = -(${m.diffHalf.toFixed(1)})·sin(${twoTheta}°) + (${state.tauXY.toFixed(1)})·cos(${twoTheta}°) = ${m.tauXpYp.toFixed(2)} ${state.unit}`;
+
+        els.eqSubCenter.textContent = `C = (${state.sigmaX} + (${state.sigmaY})) / 2 = ${m.sigmaAvg.toFixed(2)} ${state.unit}`;
+        els.eqSubRadius.textContent = `R = √[ (${m.diffHalf.toFixed(1)})² + (${state.tauXY.toFixed(1)})² ] = ${m.R.toFixed(2)} ${state.unit}`;
+        els.eqSubPrincipals.textContent = `σ₁ = ${m.sigma1.toFixed(2)} ${state.unit},  σ₂ = ${m.sigma2.toFixed(2)} ${state.unit}  (I₁ = ${(state.sigmaX + state.sigmaY).toFixed(1)} ${state.unit})`;
+
+        // Render SVGs
+        renderMohrCircle(m);
+        renderStressElement(m);
+      }
+
+      // --- Event Listeners for Sliders & Inputs ---
+      function bindInputPair(numEl, rangeEl, key) {
+        const onChange = (val) => {
+          const parsed = parseFloat(val);
+          if (!isNaN(parsed)) {
+            state[key] = parsed;
+            if (key !== 'theta') els.presetSelect.value = 'custom';
+            updateAll();
+          }
+        };
+        numEl.addEventListener('input', (e) => onChange(e.target.value));
+        rangeEl.addEventListener('input', (e) => onChange(e.target.value));
+      }
+
+      bindInputPair(els.sigmaXNum, els.sigmaXRange, 'sigmaX');
+      bindInputPair(els.sigmaYNum, els.sigmaYRange, 'sigmaY');
+      bindInputPair(els.tauXYNum, els.tauXYRange, 'tauXY');
+      bindInputPair(els.thetaNum, els.thetaRange, 'theta');
+
+      // Presets
+      els.presetSelect.addEventListener('change', (e) => {
+        const p = presets[e.target.value];
+        if (p) {
+          state.sigmaX = p.sigmaX;
+          state.sigmaY = p.sigmaY;
+          state.tauXY = p.tauXY;
+          state.theta = p.theta;
+          updateAll();
+        }
+      });
+
+      // Reset Button
+      els.resetDefaultBtn.addEventListener('click', () => {
+        els.presetSelect.value = 'biaxial';
+        Object.assign(state, presets.biaxial);
+        updateAll();
+      });
+
+      // Axis Convention Toggle
+      els.conventionToggleBtn.addEventListener('click', () => {
+        state.tauDownPositive = !state.tauDownPositive;
+        els.conventionLabel.textContent = state.tauDownPositive
+          ? 'Axis: +τ Down (CCW 2θ)'
+          : 'Axis: +τ Up (CW 2θ)';
+        updateAll();
+      });
+
+      // Unit Selector Buttons
+      els.unitBtns.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.unit = btn.getAttribute('data-unit');
+          els.unitBtns.forEach((b) => {
+            b.className = 'unit-btn px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 transition';
+          });
+          btn.className = 'unit-btn px-2.5 py-1 rounded-md bg-sky-500/20 text-sky-300 border border-sky-500/40 font-semibold transition';
+          els.unitLabels.forEach((lbl) => (lbl.textContent = state.unit));
+          updateAll();
+        });
+      });
+
+      // Quick Angle Snap Buttons
+      els.snapZeroBtn.addEventListener('click', () => {
+        state.theta = 0;
+        updateAll();
+      });
+      els.snap45Btn.addEventListener('click', () => {
+        state.theta = 45;
+        updateAll();
+      });
+      els.snapPrincipalBtn.addEventListener('click', () => {
+        const m = computeMohrMetrics();
+        state.theta = m.thetaP1;
+        updateAll();
+      });
+      els.snapShearBtn.addEventListener('click', () => {
+        const m = computeMohrMetrics();
+        state.theta = m.thetaS1;
+        updateAll();
+      });
+
+      // Continuous Sweep Animation for Theta
+      function toggleAnimation() {
+        state.isAnimating = !state.isAnimating;
+        if (state.isAnimating) {
+          els.animateBtnText.textContent = 'Pause';
+          els.playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+          const stepAnim = () => {
+            if (!state.isAnimating) return;
+            state.theta += 0.35;
+            if (state.theta > 90) state.theta = -90;
+            updateAll();
+            state.animFrameId = requestAnimationFrame(stepAnim);
+          };
+          state.animFrameId = requestAnimationFrame(stepAnim);
+        } else {
+          els.animateBtnText.textContent = 'Sweep θ';
+          els.playIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"/>';
+          if (state.animFrameId) cancelAnimationFrame(state.animFrameId);
+        }
+      }
+      els.animateBtn.addEventListener('click', toggleAnimation);
+
+      // --- Interactive Dragging on Mohr's Circle (Drag Point X') ---
+      let draggingMohr = false;
+
+      function getSvgPoint(svgEl, clientX, clientY) {
+        const rect = svgEl.getBoundingClientRect();
+        const viewBox = svgEl.viewBox.baseVal;
+        const scaleX = viewBox.width / rect.width;
+        const scaleY = viewBox.height / rect.height;
+        return {
+          x: (clientX - rect.left) * scaleX,
+          y: (clientY - rect.top) * scaleY
+        };
+      }
+
+      function handleMohrPointerMove(clientX, clientY) {
+        if (!draggingMohr) return;
+        const pt = getSvgPoint(els.mohrSvg, clientX, clientY);
+        const m = computeMohrMetrics();
+        const cx = currentMohrScale.originX + m.sigmaAvg * currentMohrScale.scale;
+        const cy = currentMohrScale.originY;
+
+        const tauSign = state.tauDownPositive ? 1 : -1;
+        const refXx = currentMohrScale.originX + state.sigmaX * currentMohrScale.scale;
+        const refXy = currentMohrScale.originY + state.tauXY * tauSign * currentMohrScale.scale;
+
+        const refAngle = Math.atan2(refXy - cy, refXx - cx);
+        const curAngle = Math.atan2(pt.y - cy, pt.x - cx);
+
+        let deltaTwoTheta = state.tauDownPositive ? (refAngle - curAngle) : (curAngle - refAngle);
+        // Normalize to [-PI, PI]
+        while (deltaTwoTheta > Math.PI) deltaTwoTheta -= 2 * Math.PI;
+        while (deltaTwoTheta < -Math.PI) deltaTwoTheta += 2 * Math.PI;
+
+        state.theta = (0.5 * deltaTwoTheta * 180) / Math.PI;
+        updateAll();
+      }
+
+      els.mohrSvg.addEventListener('mousedown', (e) => {
+        if (e.target === els.ptTransX || e.target.closest('#mohrSvg')) {
+          draggingMohr = true;
+          handleMohrPointerMove(e.clientX, e.clientY);
+        }
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (draggingMohr) handleMohrPointerMove(e.clientX, e.clientY);
+      });
+      window.addEventListener('mouseup', () => {
+        draggingMohr = false;
+      });
+
+      els.mohrSvg.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          draggingMohr = true;
+          handleMohrPointerMove(e.touches[0].clientX, e.touches[0].clientY);
+          e.preventDefault();
+        }
+      }, { passive: false });
+      window.addEventListener('touchmove', (e) => {
+        if (draggingMohr && e.touches.length === 1) {
+          handleMohrPointerMove(e.touches[0].clientX, e.touches[0].clientY);
+        }
+      }, { passive: false });
+      window.addEventListener('touchend', () => {
+        draggingMohr = false;
+      });
+
+      // --- Interactive Dragging on 2D Stress Element ---
+      let draggingElement = false;
+      let dragStartAngle = 0;
+      let elementStartTheta = 0;
+
+      function getElementAngle(clientX, clientY) {
+        const pt = getSvgPoint(els.elementSvg, clientX, clientY);
+        // Angle in degrees, CCW positive (so -y is up)
+        return (Math.atan2(210 - pt.y, pt.x - 210) * 180) / Math.PI;
+      }
+
+      els.elementSvg.addEventListener('mousedown', (e) => {
+        draggingElement = true;
+        dragStartAngle = getElementAngle(e.clientX, e.clientY);
+        elementStartTheta = state.theta;
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (!draggingElement) return;
+        const curAngle = getElementAngle(e.clientX, e.clientY);
+        let diff = curAngle - dragStartAngle;
+        while (diff > 180) diff -= 360;
+        while (diff < -180) diff += 360;
+        let nextTheta = elementStartTheta + diff;
+        if (nextTheta > 90) nextTheta -= 180;
+        if (nextTheta < -90) nextTheta += 180;
+        state.theta = nextTheta;
+        updateAll();
+      });
+      window.addEventListener('mouseup', () => {
+        draggingElement = false;
+      });
+
+      els.elementSvg.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          draggingElement = true;
+          dragStartAngle = getElementAngle(e.touches[0].clientX, e.touches[0].clientY);
+          elementStartTheta = state.theta;
+          e.preventDefault();
+        }
+      }, { passive: false });
+      window.addEventListener('touchmove', (e) => {
+        if (draggingElement && e.touches.length === 1) {
+          const curAngle = getElementAngle(e.touches[0].clientX, e.touches[0].clientY);
+          let diff = curAngle - dragStartAngle;
+          while (diff > 180) diff -= 360;
+          while (diff < -180) diff += 360;
+          let nextTheta = elementStartTheta + diff;
+          if (nextTheta > 90) nextTheta -= 180;
+          if (nextTheta < -90) nextTheta += 180;
+          state.theta = nextTheta;
+          updateAll();
+        }
+      }, { passive: false });
+      window.addEventListener('touchend', () => {
+        draggingElement = false;
+      });
+
+      // Initial Render
+      window.onload = function () {
+        updateAll();
+      };
+    })();
+  </script>
+</body>
+</html>
