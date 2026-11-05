@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Interactive Mohr's Circle — 2D Stress Transformation</title>
+  <title>Círculo de Mohr Interactivo — Transformación de Esfuerzos 2D</title>
   <style>
     :root {
       --bg-main: #0b1120;
@@ -388,22 +388,22 @@
     <div class="brand">
       <div class="brand-icon"></div>
       <div>
-        <h1>Mohr's Circle Interactive</h1>
-        <div class="subtitle">2D Plane Stress Transformation &amp; Principal Stress Analyzer</div>
+        <h1>Círculo de Mohr Interactivo</h1>
+        <div class="subtitle">Transformación de Esfuerzo Plano 2D y Analizador de Esfuerzos Principales</div>
       </div>
     </div>
 
     <div class="toolbar">
-      <label for="presetSelect" class="subtitle">Preset:</label>
+      <label for="presetSelect" class="subtitle">Caso:</label>
       <select id="presetSelect">
-        <option value="custom">General Biaxial + Shear</option>
-        <option value="uniaxial">Uniaxial Tension</option>
-        <option value="pureshear">Pure Shear</option>
-        <option value="hydrostatic">Hydrostatic Stress</option>
-        <option value="vessel">Cylindrical Pressure Vessel</option>
+        <option value="custom">Biaxial General + Cortante</option>
+        <option value="uniaxial">Tensión Uniaxial</option>
+        <option value="pureshear">Cortante Puro</option>
+        <option value="hydrostatic">Esfuerzo Hidrostático</option>
+        <option value="vessel">Recipiente a Presión Cilíndrico</option>
       </select>
 
-      <label for="unitSelect" class="subtitle">Units:</label>
+      <label for="unitSelect" class="subtitle">Unidades:</label>
       <select id="unitSelect">
         <option value="MPa">MPa</option>
         <option value="ksi">ksi</option>
@@ -415,13 +415,13 @@
   <main>
     <!-- Controls & Readouts Panel -->
     <aside class="panel">
-      <div class="section-title">Input Stress State</div>
+      <div class="section-title">Estado de Esfuerzos de Entrada</div>
 
       <div class="control-group">
         <div class="control-header">
           <span class="control-label">
             <span class="dot" style="background: var(--accent-x)"></span>
-            Normal Stress &sigma;<sub>x</sub>
+            Esfuerzo Normal &sigma;<sub>x</sub>
           </span>
           <div class="number-input-wrap">
             <input type="number" id="numSigmaX" value="80" min="-200" max="200" step="1" />
@@ -435,7 +435,7 @@
         <div class="control-header">
           <span class="control-label">
             <span class="dot" style="background: var(--accent-y)"></span>
-            Normal Stress &sigma;<sub>y</sub>
+            Esfuerzo Normal &sigma;<sub>y</sub>
           </span>
           <div class="number-input-wrap">
             <input type="number" id="numSigmaY" value="-40" min="-200" max="200" step="1" />
@@ -449,7 +449,7 @@
         <div class="control-header">
           <span class="control-label">
             <span class="dot" style="background: var(--accent-tau)"></span>
-            Shear Stress &tau;<sub>xy</sub>
+            Esfuerzo Cortante &tau;<sub>xy</sub>
           </span>
           <div class="number-input-wrap">
             <input type="number" id="numTauXY" value="50" min="-200" max="200" step="1" />
@@ -463,11 +463,11 @@
         <div class="control-header">
           <span class="control-label">
             <span class="dot" style="background: var(--accent-p)"></span>
-            Orientation Angle &theta;
+            Ángulo de Orientación &theta;
           </span>
           <div class="number-input-wrap">
             <input type="number" id="numTheta" value="25" min="-90" max="90" step="0.5" />
-            <span class="unit-tag">deg</span>
+            <span class="unit-tag">grados</span>
           </div>
         </div>
         <input type="range" id="rngTheta" value="25" min="-90" max="90" step="0.5" />
@@ -475,34 +475,34 @@
 
       <div class="quick-buttons">
         <button type="button" id="btnZeroTheta">&theta; = 0&deg;</button>
-        <button type="button" id="btnPrincipal" class="btn-accent">Snap &theta;<sub>p1</sub></button>
-        <button type="button" id="btnMaxShear" class="btn-accent">Snap &theta;<sub>s1</sub></button>
+        <button type="button" id="btnPrincipal" class="btn-accent">Ir a &theta;<sub>p1</sub></button>
+        <button type="button" id="btnMaxShear" class="btn-accent">Ir a &theta;<sub>s1</sub></button>
       </div>
 
-      <div class="section-title">Principal &amp; Invariant Values</div>
+      <div class="section-title">Valores Principales e Invariantes</div>
       <div class="metrics-grid">
         <div class="metric-card">
-          <div class="metric-name"><span>Max Principal &sigma;<sub>1</sub></span></div>
+          <div class="metric-name"><span>Principal Máx &sigma;<sub>1</sub></span></div>
           <div class="metric-val" id="outSigma1" style="color: var(--accent-p)">0.0</div>
         </div>
         <div class="metric-card">
-          <div class="metric-name"><span>Min Principal &sigma;<sub>2</sub></span></div>
+          <div class="metric-name"><span>Principal Mín &sigma;<sub>2</sub></span></div>
           <div class="metric-val" id="outSigma2" style="color: var(--accent-p)">0.0</div>
         </div>
         <div class="metric-card">
-          <div class="metric-name"><span>Max In-Plane &tau;<sub>max</sub></span></div>
+          <div class="metric-name"><span>Cortante Máx &tau;<sub>máx</sub></span></div>
           <div class="metric-val" id="outTauMax" style="color: var(--accent-tau)">0.0</div>
         </div>
         <div class="metric-card">
-          <div class="metric-name"><span>Center &sigma;<sub>avg</sub></span></div>
+          <div class="metric-name"><span>Centro &sigma;<sub>prom</sub></span></div>
           <div class="metric-val" id="outSigmaAvg">0.0</div>
         </div>
         <div class="metric-card">
-          <div class="metric-name"><span>Principal Angle &theta;<sub>p1</sub></span></div>
+          <div class="metric-name"><span>Ángulo Principal &theta;<sub>p1</sub></span></div>
           <div class="metric-val" id="outThetaP">0.0&deg;</div>
         </div>
         <div class="metric-card">
-          <div class="metric-name"><span>Shear Angle &theta;<sub>s1</sub></span></div>
+          <div class="metric-name"><span>Ángulo Cortante &theta;<sub>s1</sub></span></div>
           <div class="metric-val" id="outThetaS">0.0&deg;</div>
         </div>
       </div>
@@ -513,8 +513,8 @@
       <div class="canvas-grid">
         <div class="canvas-card">
           <div class="canvas-header">
-            <span class="canvas-title">Mohr's Circle (&sigma; &ndash; &tau; Space)</span>
-            <span class="canvas-hint">Drag point X' around the circle to rotate &theta;</span>
+            <span class="canvas-title">Círculo de Mohr (Espacio &sigma; &ndash; &tau;)</span>
+            <span class="canvas-hint">Arrastra el punto X' alrededor del círculo para rotar &theta;</span>
           </div>
           <div class="canvas-container">
             <canvas id="mohrCanvas"></canvas>
@@ -523,8 +523,8 @@
 
         <div class="canvas-card">
           <div class="canvas-header">
-            <span class="canvas-title">2D Rotated Stress Element</span>
-            <span class="canvas-hint">Drag element to rotate physical angle &theta;</span>
+            <span class="canvas-title">Elemento de Esfuerzo 2D Rotado</span>
+            <span class="canvas-hint">Arrastra el elemento para rotar el ángulo físico &theta;</span>
           </div>
           <div class="canvas-container">
             <canvas id="elementCanvas"></canvas>
@@ -534,11 +534,11 @@
 
       <div class="equations-bar">
         <div class="eq-box eq-x">
-          <div class="eq-formula">&sigma;<sub>x'</sub> = &sigma;<sub>avg</sub> + [(&sigma;<sub>x</sub> - &sigma;<sub>y</sub>)/2]cos(2&theta;) + &tau;<sub>xy</sub>sin(2&theta;)</div>
+          <div class="eq-formula">&sigma;<sub>x'</sub> = &sigma;<sub>prom</sub> + [(&sigma;<sub>x</sub> - &sigma;<sub>y</sub>)/2]cos(2&theta;) + &tau;<sub>xy</sub>sin(2&theta;)</div>
           <div class="eq-result" id="eqSigmaXPrime">&sigma;<sub>x'</sub> = 0.0 MPa</div>
         </div>
         <div class="eq-box eq-y">
-          <div class="eq-formula">&sigma;<sub>y'</sub> = &sigma;<sub>avg</sub> - [(&sigma;<sub>x</sub> - &sigma;<sub>y</sub>)/2]cos(2&theta;) - &tau;<sub>xy</sub>sin(2&theta;)</div>
+          <div class="eq-formula">&sigma;<sub>y'</sub> = &sigma;<sub>prom</sub> - [(&sigma;<sub>x</sub> - &sigma;<sub>y</sub>)/2]cos(2&theta;) - &tau;<sub>xy</sub>sin(2&theta;)</div>
           <div class="eq-result" id="eqSigmaYPrime">&sigma;<sub>y'</sub> = 0.0 MPa</div>
         </div>
         <div class="eq-box eq-t">
@@ -678,7 +678,6 @@
       const originY = h / 2;
 
       const toScreenX = (sigma) => originX + sigma * scale;
-      // Engineering convention: +tau plotted downward so CCW element rotation = CCW on Mohr's Circle
       const toScreenY = (tau) => originY + tau * scale;
 
       // Grid lines
@@ -716,8 +715,8 @@
       ctx.fillStyle = '#94a3b8';
       ctx.font = '12px monospace';
       ctx.fillText('+σ', w - 26, originY - 8);
-      ctx.fillText('+τ (CW)', originX + 8, h - 12);
-      ctx.fillText('-τ (CCW)', originX + 8, 18);
+      ctx.fillText('+τ (Horario)', originX + 8, h - 12);
+      ctx.fillText('-τ (Antihorario)', originX + 8, 18);
 
       const cx = toScreenX(m.sigmaAvg);
       const cy = toScreenY(0);
@@ -825,7 +824,6 @@
 
       ctx.save();
       ctx.translate(cx, cy);
-      // Screen Y is downward, so positive CCW rotation is -theta
       const rad = (-state.theta * Math.PI) / 180;
       ctx.rotate(rad);
 
@@ -895,16 +893,12 @@
 
       // Shear stress arrows around faces
       if (Math.abs(m.tauXYPrime) > 0.5) {
-        const pos = m.tauXYPrime > 0; // +tauXYPrime points in +y' (upward on element) on +x' face
+        const pos = m.tauXYPrime > 0;
         const offset = half + 10;
         const sLen = half * 0.55;
-        // +x' face
         drawArrow(ctx, offset, pos ? sLen : -sLen, offset, pos ? -sLen : sLen, '#f59e0b');
-        // -x' face
         drawArrow(ctx, -offset, pos ? -sLen : sLen, -offset, pos ? sLen : -sLen, '#f59e0b');
-        // +y' face (top)
         drawArrow(ctx, pos ? -sLen : sLen, -offset, pos ? sLen : -sLen, -offset, '#f59e0b');
-        // -y' face (bottom)
         drawArrow(ctx, pos ? sLen : -sLen, offset, pos ? -sLen : sLen, offset, '#f59e0b');
       }
 
@@ -935,7 +929,6 @@
       ctx.fill();
     }
 
-    // Bind sliders and numeric inputs
     function bindControl(numEl, rngEl, key) {
       const handler = (e) => {
         const val = parseFloat(e.target.value);
@@ -993,7 +986,6 @@
       updateUI();
     });
 
-    // Pointer dragging on Mohr Circle & Stress Element
     function enableCanvasDrag(canvas, isMohr) {
       let dragging = false;
 
