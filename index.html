@@ -394,14 +394,7 @@
     </div>
 
     <div class="toolbar">
-      <label for="presetSelect" class="subtitle">Caso:</label>
-      <select id="presetSelect">
-        <option value="custom">Biaxial General + Cortante</option>
-        <option value="uniaxial">Tensión Uniaxial</option>
-        <option value="pureshear">Cortante Puro</option>
-        <option value="hydrostatic">Esfuerzo Hidrostático</option>
-        <option value="vessel">Recipiente a Presión Cilíndrico</option>
-      </select>
+      <span class="subtitle">Caso: <strong>Biaxial General + Cortante</strong></span>
 
       <label for="unitSelect" class="subtitle">Unidades:</label>
       <select id="unitSelect">
@@ -567,7 +560,6 @@
       rngTauXY: document.getElementById('rngTauXY'),
       numTheta: document.getElementById('numTheta'),
       rngTheta: document.getElementById('rngTheta'),
-      presetSelect: document.getElementById('presetSelect'),
       unitSelect: document.getElementById('unitSelect'),
       btnZeroTheta: document.getElementById('btnZeroTheta'),
       btnPrincipal: document.getElementById('btnPrincipal'),
@@ -945,21 +937,6 @@
     bindControl(dom.numSigmaY, dom.rngSigmaY, 'sigmaY');
     bindControl(dom.numTauXY, dom.rngTauXY, 'tauXY');
     bindControl(dom.numTheta, dom.rngTheta, 'theta');
-
-    dom.presetSelect.addEventListener('change', (e) => {
-      const presets = {
-        custom: { sigmaX: 80, sigmaY: -40, tauXY: 50, theta: 25 },
-        uniaxial: { sigmaX: 120, sigmaY: 0, tauXY: 0, theta: 30 },
-        pureshear: { sigmaX: 0, sigmaY: 0, tauXY: 75, theta: 45 },
-        hydrostatic: { sigmaX: 90, sigmaY: 90, tauXY: 0, theta: 0 },
-        vessel: { sigmaX: 60, sigmaY: 120, tauXY: 0, theta: 35 }
-      };
-      const p = presets[e.target.value];
-      if (p) {
-        Object.assign(state, p);
-        updateUI();
-      }
-    });
 
     dom.unitSelect.addEventListener('change', (e) => {
       state.unit = e.target.value;
